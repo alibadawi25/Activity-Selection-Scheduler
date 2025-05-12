@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Modal, Menu, Layout, notification } from "antd";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -19,6 +19,20 @@ function App() {
   const showModal = () => setIsModalOpen(true);
   const handleCancel = () => setIsModalOpen(false);
 
+  useEffect(() => {
+    if (localStorage.getItem("activities")) {
+      debugger;
+      setActivities(
+        JSON.parse(localStorage.getItem("activities"), function (key, value) {
+          if (key == "start" || key == "end") {
+            return new dayjs(value);
+          }
+          return value;
+        })
+      );
+    }
+  }, [setActivities]);
+
   const handleConfirm = () => {
     if (!startDateTime || !endDateTime) {
       console.log("Data is missing!!");
@@ -28,7 +42,10 @@ function App() {
         end: endDateTime,
       };
       setActivities((prev) => [...prev, newActivity]);
-
+      localStorage.setItem(
+        "activities",
+        JSON.stringify([...activities, newActivity])
+      );
       // Show success notification
       notification.success({
         message: "Activity Added",
