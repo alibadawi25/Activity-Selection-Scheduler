@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button, Modal, Menu, Layout, notification } from "antd";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -15,19 +15,6 @@ function App() {
   const [endDateTime, setEndDateTime] = useState(null);
   const [activities, setActivities] = useState([]);
   const [currentTab, setCurrentTab] = useState("home");
-
-  // Load activities from localStorage on initial load
-  useEffect(() => {
-    const storedActivities = localStorage.getItem("activities");
-    if (storedActivities) {
-      setActivities(JSON.parse(storedActivities));
-    }
-  }, []);
-
-  // Save activities to localStorage whenever the activities array changes
-  useEffect(() => {
-    localStorage.setItem("activities", JSON.stringify(activities));
-  }, [activities]);
 
   const showModal = () => setIsModalOpen(true);
   const handleCancel = () => setIsModalOpen(false);
@@ -66,11 +53,12 @@ function App() {
           selectedKeys={[currentTab]}
           onClick={(e) => setCurrentTab(e.key)}
           style={{ lineHeight: "64px" }}
-        >
-          <Menu.Item key="home">Home</Menu.Item>
-          <Menu.Item key="activities">Activities</Menu.Item>
-          <Menu.Item key="algorithms">Algorithms</Menu.Item>
-        </Menu>
+          items={[
+            { label: "Home", key: "home" },
+            { label: "Activities", key: "activities" },
+            { label: "Algorithms", key: "algorithms" },
+          ]}
+        />
       </Header>
 
       <Content
