@@ -58,6 +58,20 @@ function App() {
     }
   };
 
+  const greedyAlgorithm = () => {
+    let sorted = activities.slice();
+    fastSort(sorted, (a, b) => a.end - b.end);
+    const selected = [];
+    let currentEnd = -Infinity;
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i].start >= currentEnd) {
+        selected.push(sorted[i]);
+        currentEnd = sorted[i].end;
+      }
+    }
+    console.log("Greedy Selected Activities:", selected);
+  };
+
   const dpAlgorithm = () => {
     let sorted = activities.slice();
     fastSort(sorted, (a, b) => a.end - b.end);
@@ -213,7 +227,11 @@ function App() {
         {currentTab === "algorithms" && (
           <>
             <h2>Algorithms</h2>
-            <Button type="primary" style={{ width: "10%", minWidth: "96px" }}>
+            <Button
+              type="primary"
+              style={{ width: "10%", minWidth: "96px" }}
+              onClick={greedyAlgorithm}
+            >
               Greedy
             </Button>
             <Button
