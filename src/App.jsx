@@ -92,6 +92,7 @@ function App() {
   };
 
   const greedyAlgorithm = () => {
+    setCurrentAlgorithm("greedy");
     let sorted = activities.slice().sort((a, b) => a.end - b.end);
     const selected = [];
     let currentEnd = -Infinity;
@@ -101,10 +102,23 @@ function App() {
         currentEnd = sorted[i].end;
       }
     }
+    setselectedActivities(selected);
     console.log("Greedy Selected Activities:", selected);
   };
 
+  const clearActivities = () => {
+    setActivities([]);
+    setselectedActivities([]);
+    localStorage.removeItem("activities");
+    notification.info({
+      message: "Activities Cleared",
+      description: "All activities have been removed.",
+      placement: "topRight",
+    });
+  };
+
   const dpAlgorithm = () => {
+    setCurrentAlgorithm("dp");
     let sorted = activities.slice().sort((a, b) => a.end - b.end);
 
     const n = sorted.length;
@@ -130,6 +144,7 @@ function App() {
   };
 
   const bruteForceAlgorithm = () => {
+    setCurrentAlgorithm("bruteforce");
     let choice = [];
     let n = activities.length;
     for (let mask = 0; mask < (1 << n); ++mask) {
@@ -150,7 +165,6 @@ function App() {
     }
     console.log("Brute-Force Selected Activities:", choice);
   };
-
 
   return (
     <Layout className="layout" style={{ minHeight: "100vh" }}>
@@ -332,6 +346,7 @@ function App() {
                   marginTop: "8px",
                   backgroundColor: "#9c27b0",
                 }}
+                onClick={bruteForceAlgorithm}
               >
                 Brute Force
               </Button>
