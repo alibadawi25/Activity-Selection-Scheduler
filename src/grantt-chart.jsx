@@ -1,0 +1,182 @@
+import { Box, Typography } from "@mui/material";
+import { motion } from "framer-motion";
+
+const timeScaleItemStyle = {
+  flexGrow: 1,
+  textAlign: "center",
+  fontSize: "0.75rem",
+  color: "#616161",
+};
+
+const activityRowStyle = {
+  position: "relative",
+  marginBottom: "8px",
+};
+
+const activityBackgroundStyle = {
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  width: "100%",
+  backgroundColor: "#f5f5f5",
+};
+
+const legendItemStyle = {
+  display: "flex",
+  alignItems: "center",
+  marginLeft: "16px",
+};
+
+const legendColorStyle = (bgcolor) => ({
+  width: 12,
+  height: 12,
+  borderRadius: 2,
+  marginRight: "4px",
+  backgroundColor: bgcolor,
+});
+
+const formatTime = (hour) => {
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 || hour === 24 ? "AM" : "PM";
+  return `${h}${ampm}`;
+};
+
+export default function GanttChart({
+  activities,
+  selectedActivities,
+  timeScale = null,
+  color = "blue",
+}) {
+  // Remove debugger statement
+  const [minTime, maxTime] = [0, 24];
+  const timeRange = maxTime - minTime;
+
+  const getColor = (isSelected) => {
+    if (!isSelected) return "#a0a0a0";
+
+    switch (color) {
+      case "green":
+        return "#4caf50";
+      case "blue":
+        return "#1976d2";
+      case "purple":
+        return "#9c27b0";
+      default:
+        return "#1976d2";
+    }
+  };
+
+  if (!activities || activities.length === 0) {
+    return (
+      <Box sx={{ width: "100%", height: "100%", p: 2, textAlign: "center" }}>
+        <Typography variant="body1" color="text.secondary">
+          No activities to display
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ width: "100%", height: "100%", overflowX: "auto" }}>
+      <Box>
+        <Box
+          sx={{
+            display: "flex",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            mb: 1,
+          }}
+        >
+          {Array.from({ length: timeRange + 1 }, (_, i) => (
+            <Box
+              key={i}
+              sx={{
+                ...timeScaleItemStyle,
+                width: `${(1 / timeRange) * 100}%`,
+              }}
+            >
+              {formatTime(minTime + i)}
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      <Box sx={{ mt: 2 }}>
+        {activities.map((activity, index) => {
+          if (!activity) return null;
+
+          const startHour = activity.start.hour();
+          const endHour = activity.end.hour();
+
+          const isSelected =
+            selectedActivities &&
+            selectedActivities.some((a) => {
+              if (!a) return false;
+              const aStartHour = a.start.hour();
+              const aEndHour = a.end.hour();
+              return (
+                a === activity ||
+                (aStartHour === startHour && aEndHour === endHour)
+              );
+            });
+
+          const width = Math.max(
+            0,
+            Math.min(100, ((endHour - startHour) / timeRange) * 100)
+          );
+          const left = Math.max(
+            0,
+            Math.min(100, ((startHour - minTime) / timeRange) * 100)
+          );
+
+          return (
+            <Box key={index} sx={{ ...activityRowStyle, height: 48 }}>
+              <Box sx={activityBackgroundStyle} />
+              <motion.div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  width: `${width}%`,
+                  left: `${left}%`,
+                  backgroundColor: getColor(isSelected),
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 4,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  padding: "0 8px",
+                }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{
+                  opacity: isSelected ? 1 : 0.5,
+                  scale: isSelected ? 1 : 0.95,
+                  y: isSelected ? -2 : 0,
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                {activity.name || `Activity ${index + 1}`}
+              </motion.div>
+            </Box>
+          );
+        })}
+        <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+          <Box sx={legendItemStyle}>
+            <Box sx={legendColorStyle("#e0e0e0")} />
+            <Typography variant="body2">Not Selected</Typography>
+          </Box>
+          <Box sx={legendItemStyle}>
+            <Box sx={legendColorStyle(getColor(true))} />
+            <Typography variant="body2">Selected</Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
