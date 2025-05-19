@@ -9,7 +9,6 @@ import "antd/dist/reset.css";
 import "./App.css";
 
 import GranttChart from "./grantt-chart";
-import { fastSort } from "./utils";
 
 const { Header, Content } = Layout;
 
@@ -26,6 +25,8 @@ function App() {
   const [activities, setActivities] = useState([]);
   const [selectedActivities, setselectedActivities] = useState([]);
   const [currentAlgorithm, setCurrentAlgorithm] = useState(null);
+  const [currentAlgorithmSteps, setCurrentAlgorithmSteps] = useState([]);
+  const [timeTaken, setTimeTaken] = useState(0);
   const [currentTab, setCurrentTab] = useState("home");
   const [timeScale, setTimeScale] = useState([0, 24]);
   const showModal = () => setIsModalOpen(true);
@@ -90,22 +91,6 @@ function App() {
       setIsModalOpen(false);
     }
   };
-
-  const greedyAlgorithm = () => {
-    setCurrentAlgorithm("greedy");
-    let sorted = activities.slice().sort((a, b) => a.end - b.end);
-    const selected = [];
-    let currentEnd = -Infinity;
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i].start >= currentEnd) {
-        selected.push(sorted[i]);
-        currentEnd = sorted[i].end;
-      }
-    }
-    setselectedActivities(selected);
-    console.log("Greedy Selected Activities:", selected);
-  };
-
   const clearActivities = () => {
     setActivities([]);
     setselectedActivities([]);
@@ -117,7 +102,45 @@ function App() {
     });
   };
 
+  const greedyAlgorithm = () => {
+    setCurrentAlgorithm("greedy");
+    let sorted = activities.slice().sort((a, b) => a.end - b.end);
+    const selected = [];
+    const stepsSelected = [];
+    const steps = [];
+
+    let currentEnd = -Infinity;
+    for (let i = 0; i < sorted.length; i++) {
+      if (stepsSelected.length === 0)
+        steps.push([{ activity: sorted[i], color: "yellow" }]);
+      else
+        steps.push([
+          ...stepsSelected[stepsSelected.length - 1],
+          { activity: sorted[i], color: "yellow" },
+        ]);
+
+      if (sorted[i].start >= currentEnd) {
+        selected.push(sorted[i]);
+
+        if (stepsSelected.length === 0)
+          stepsSelected.push([{ activity: sorted[i], color: "green" }]);
+        else
+          stepsSelected.push([
+            ...stepsSelected[stepsSelected.length - 1],
+            { activity: sorted[i], color: "green" },
+          ]);
+
+        currentEnd = sorted[i].end;
+      }
+    }
+    setCurrentAlgorithmSteps(steps);
+    setselectedActivities(selected);
+    console.log("Greedy Selected Activities:", selected);
+    console.log("Greedy Time Taken:", timeTaken);
+  };
+
   const dpAlgorithm = () => {
+    const start = performance.now();
     setCurrentAlgorithm("dp");
     let sorted = activities.slice().sort((a, b) => a.end - b.end);
 
@@ -125,45 +148,87 @@ function App() {
     const dp = Array(n).fill(1);
     const prev = Array(n).fill(-1);
 
+    const steps = [];
+    const stepsSelected = [];
+
     for (let i = 1; i < n; i++) {
+      let stepSnapshot = [];
+
       for (let j = 0; j < i; j++) {
+        stepSnapshot.push({ activity: sorted[j], color: "yellow" });
         if (sorted[j].end <= sorted[i].start && dp[j] + 1 > dp[i]) {
           dp[i] = dp[j] + 1;
           prev[i] = j;
         }
       }
+
+      steps.push(stepSnapshot);
     }
 
     let idx = dp.indexOf(Math.max(...dp));
     const selected = [];
     while (idx !== -1) {
       selected.unshift(sorted[idx]);
+
+      if (stepsSelected.length === 0)
+        stepsSelected.push([{ activity: sorted[idx], color: "green" }]);
+      else
+        stepsSelected.push([
+          ...stepsSelected[stepsSelected.length - 1],
+          { activity: sorted[idx], color: "green" },
+        ]);
+
       idx = prev[idx];
     }
+
+    const end = performance.now();
+    setCurrentAlgorithmSteps(steps.concat(stepsSelected));
+    setselectedActivities(selected);
+    setTimeTaken(end - start);
     console.log("DP Selected Activities:", selected);
+    console.log("DP Time Taken:", timeTaken);
   };
 
   const bruteForceAlgorithm = () => {
+    const start = performance.now();
     setCurrentAlgorithm("bruteforce");
+
     let choice = [];
+    let bestSteps = [];
     let n = activities.length;
-    for (let mask = 0; mask < (1 << n); ++mask) {
+
+    for (let mask = 0; mask < 1 << n; ++mask) {
       const selected = [];
+      const stepSnapshot = [];
+
       for (let i = 0; i < n; ++i) {
-        if (mask&(1<<i)) selected.push(activities[i]);
+        if (mask & (1 << i)) {
+          selected.push(activities[i]);
+          stepSnapshot.push({ activity: activities[i], color: "yellow" });
+        }
       }
-      let flag = true;
+
       selected.sort((a, b) => a.end - b.end);
+      let valid = true;
       for (let i = 1; i < selected.length; ++i) {
-        if (selected[i-1].end > selected[i].start) {
-          flag = false;
+        if (selected[i - 1].end > selected[i].start) {
+          valid = false;
           break;
         }
       }
-      if (!flag) continue;
-      if (choice.length < selected.length) choice = selected;
+
+      if (valid && selected.length > choice.length) {
+        choice = selected;
+        bestSteps = stepSnapshot.map((item) => ({ ...item, color: "green" }));
+      }
     }
+
+    const end = performance.now();
+    setCurrentAlgorithmSteps([bestSteps]);
+    setselectedActivities(choice);
+    setTimeTaken(end - start);
     console.log("Brute-Force Selected Activities:", choice);
+    console.log("Brute-Force Time Taken:", timeTaken);
   };
 
   return (
@@ -367,6 +432,7 @@ function App() {
                     ? "purple"
                     : "blue"
                 }
+                steps={currentAlgorithmSteps}
               />
             </div>
           </div>

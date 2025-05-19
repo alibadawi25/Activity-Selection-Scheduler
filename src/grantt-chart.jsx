@@ -1,5 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 const timeScaleItemStyle = {
   flexGrow: 1,
@@ -46,23 +47,49 @@ export default function GanttChart({
   selectedActivities,
   timeScale = null,
   color = "blue",
+  steps,
 }) {
   // Remove debugger statement
   const [minTime, maxTime] = [0, 24];
   const timeRange = maxTime - minTime;
+  const [currentlySelected, setCurrentlySelected] = useState([]);
 
-  const getColor = (isSelected) => {
-    if (!isSelected) return "#a0a0a0";
+  useEffect(() => {
+    for (let i = 0; i < steps.length; i++) {
+      setTimeout(() => {
+        console.log("here");
+        setCurrentlySelected(steps[i]);
+      }, i * 500 + 500);
+    }
+    setTimeout(() => {
+      setCurrentlySelected(
+        selectedActivities.map((a) => ({ activity: a, color }))
+      );
+    }, steps.length * 500 + 500);
+  }, [steps, selectedActivities, color]);
 
-    switch (color) {
+  const getColor = (isSelectedColor) => {
+    if (!isSelectedColor) return "#a0a0a0";
+
+    switch (isSelectedColor) {
       case "green":
         return "#4caf50";
       case "blue":
         return "#1976d2";
       case "purple":
         return "#9c27b0";
+      case "yellow":
+        return "#f7dc6f";
+      case "orange":
+        return "#ffa726";
+      case "red":
+        return "#ef5350";
+      case "pink":
+        return "#ec407a";
+      case "brown":
+        return "#795548";
       default:
-        return "#1976d2";
+        return color;
     }
   };
 
@@ -102,70 +129,75 @@ export default function GanttChart({
       </Box>
 
       <Box sx={{ mt: 2 }}>
-        {activities.map((activity, index) => {
-          if (!activity) return null;
+        {activities
+          .slice()
+          .sort((a, b) => a.end - b.end)
+          .map((activity, index) => {
+            if (!activity) return null;
 
-          const startHour = activity.start.hour();
-          const endHour = activity.end.hour();
+            const startHour = activity.start.hour();
+            const endHour = activity.end.hour();
 
-          const isSelected =
-            selectedActivities &&
-            selectedActivities.some((a) => {
-              if (!a) return false;
-              const aStartHour = a.start.hour();
-              const aEndHour = a.end.hour();
-              return (
-                a === activity ||
-                (aStartHour === startHour && aEndHour === endHour)
-              );
-            });
+            const currentlySelectedActivity = currentlySelected.filter(
+              (a) =>
+                a.activity &&
+                a.activity.start.hour() === startHour &&
+                a.activity.end.hour() === endHour
+            )[0];
+            const isSelected =
+              currentlySelectedActivity !== undefined
+                ? currentlySelectedActivity.activity === activity
+                : false;
 
-          const width = Math.max(
-            0,
-            Math.min(100, ((endHour - startHour) / timeRange) * 100)
-          );
-          const left = Math.max(
-            0,
-            Math.min(100, ((startHour - minTime) / timeRange) * 100)
-          );
+            const width = Math.max(
+              0,
+              Math.min(100, ((endHour - startHour) / timeRange) * 100)
+            );
+            const left = Math.max(
+              0,
+              Math.min(100, ((startHour - minTime) / timeRange) * 100)
+            );
 
-          return (
-            <Box key={index} sx={{ ...activityRowStyle, height: 48 }}>
-              <Box sx={activityBackgroundStyle} />
-              <motion.div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  width: `${width}%`,
-                  left: `${left}%`,
-                  backgroundColor: getColor(isSelected),
-                  color: "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 4,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  padding: "0 8px",
-                }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                  opacity: isSelected ? 1 : 0.5,
-                  scale: isSelected ? 1 : 0.95,
-                  y: isSelected ? -2 : 0,
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                {activity.name || `Activity ${index + 1}`}
-              </motion.div>
-            </Box>
-          );
-        })}
+            return (
+              <Box key={index} sx={{ ...activityRowStyle, height: 48 }}>
+                <Box sx={activityBackgroundStyle} />
+                <motion.div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    bottom: 0,
+                    width: `${width}%`,
+                    left: `${left}%`,
+                    backgroundColor:
+                      currentlySelectedActivity !== undefined
+                        ? getColor(currentlySelectedActivity.color)
+                        : getColor(false),
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 4,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    padding: "0 8px",
+                  }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{
+                    opacity: isSelected ? 1 : 0.5,
+                    scale: isSelected ? 1 : 0.95,
+                    y: isSelected ? -2 : 0,
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {activity.name || `Activity ${index + 1}`}
+                </motion.div>
+              </Box>
+            );
+          })}
         <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
           <Box sx={legendItemStyle}>
             <Box sx={legendColorStyle("#e0e0e0")} />
