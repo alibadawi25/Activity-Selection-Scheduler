@@ -21,11 +21,10 @@ function App() {
 
   useEffect(() => {
     if (localStorage.getItem("activities")) {
-      debugger;
       setActivities(
         JSON.parse(localStorage.getItem("activities"), function (key, value) {
-          if (key == "start" || key == "end") {
-            return new dayjs(value);
+          if (key === "start" || key === "end") {
+            return dayjs(value);
           }
           return value;
         })
@@ -41,12 +40,9 @@ function App() {
         start: startDateTime,
         end: endDateTime,
       };
-      setActivities((prev) => [...prev, newActivity]);
-      localStorage.setItem(
-        "activities",
-        JSON.stringify([...activities, newActivity])
-      );
-      // Show success notification
+      const updatedActivities = [...activities, newActivity];
+      setActivities(updatedActivities);
+      localStorage.setItem("activities", JSON.stringify(updatedActivities));
       notification.success({
         message: "Activity Added",
         description: `Your activity from ${startDateTime.format(
@@ -56,9 +52,32 @@ function App() {
         )} has been added successfully.`,
         placement: "topRight",
       });
-
       setIsModalOpen(false);
     }
+  };
+
+  const dpAlgorithm = () => {
+    const sorted = [...activities].sort((a, b) => a.end - b.end);
+    const n = sorted.length;
+    const dp = Array(n).fill(1);
+    const prev = Array(n).fill(-1);
+
+    for (let i = 1; i < n; i++) {
+      for (let j = 0; j < i; j++) {
+        if (sorted[j].end <= sorted[i].start && dp[j] + 1 > dp[i]) {
+          dp[i] = dp[j] + 1;
+          prev[i] = j;
+        }
+      }
+    }
+
+    let idx = dp.indexOf(Math.max(...dp));
+    const selected = [];
+    while (idx !== -1) {
+      selected.unshift(sorted[idx]);
+      idx = prev[idx];
+    }
+    console.log("DP Selected Activities:", selected);
   };
 
   return (
@@ -81,7 +100,7 @@ function App() {
       <Content
         style={{
           padding: "20px 50px",
-          marginTop: 64, // Offset to avoid overlap with the fixed header
+          marginTop: 64,
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -94,10 +113,7 @@ function App() {
               <Button
                 type="primary"
                 onClick={showModal}
-                style={{
-                  width: "10%", // Explicitly set the width to auto
-                  minWidth: "96px", // Optional: Ensure a minimum width for better appearance
-                }}
+                style={{ width: "10%", minWidth: "96px" }}
               >
                 Add Activity
               </Button>
@@ -193,32 +209,19 @@ function App() {
         {currentTab === "algorithms" && (
           <>
             <h2>Algorithms</h2>
-            <Button
-              type="primary"
-              style={{
-                width: "10%", // Explicitly set the width to auto
-                minWidth: "96px",
-              }}
-            >
+            <Button type="primary" style={{ width: "10%", minWidth: "96px" }}>
               Greedy
             </Button>
             <Button
               type="primary"
-              style={{
-                width: "10%", // Explicitly set the width to auto
-                minWidth: "96px",
-                marginTop: "8px",
-              }}
+              style={{ width: "10%", minWidth: "96px", marginTop: "8px" }}
+              onClick={dpAlgorithm}
             >
               DP
             </Button>
             <Button
               type="primary"
-              style={{
-                width: "10%", // Explicitly set the width to auto
-                minWidth: "96px",
-                marginTop: "8px",
-              }}
+              style={{ width: "10%", minWidth: "96px", marginTop: "8px" }}
             >
               Brute Force
             </Button>
