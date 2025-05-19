@@ -7,6 +7,8 @@ import dayjs from "dayjs";
 import "antd/dist/reset.css";
 import "./App.css";
 
+import { fastSort } from "./utils";
+
 const { Header, Content } = Layout;
 
 function App() {
@@ -57,7 +59,9 @@ function App() {
   };
 
   const dpAlgorithm = () => {
-    const sorted = [...activities].sort((a, b) => a.end - b.end);
+    let sorted = activities.slice();
+    fastSort(sorted, (a, b) => a.end - b.end);
+
     const n = sorted.length;
     const dp = Array(n).fill(1);
     const prev = Array(n).fill(-1);
