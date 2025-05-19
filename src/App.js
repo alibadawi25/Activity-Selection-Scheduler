@@ -1,90 +1,57 @@
 import React, { useState, useEffect } from "react";
 import { Button, Modal, Menu, Layout, notification } from "antd";
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { TextField, Stack, Box } from "@mui/material";
 import dayjs from "dayjs";
 import "antd/dist/reset.css";
 import "./App.css";
 
-import GranttChart from "./grantt-chart";
 import { fastSort } from "./utils";
 
 const { Header, Content } = Layout;
 
-const formatTime = (hour) => {
-  const h = hour % 12 || 12;
-  const ampm = hour < 12 || hour === 24 ? "AM" : "PM";
-  return `${h}${ampm}`;
-};
-
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [startTime, setStartTime] = useState(dayjs().hour(6).minute(0));
-  const [endTime, setEndTime] = useState(dayjs().hour(8).minute(0));
+  const [startDateTime, setStartDateTime] = useState(dayjs().minute(0));
+  const [endDateTime, setEndDateTime] = useState(null);
   const [activities, setActivities] = useState([]);
-  const [selectedActivities, setselectedActivities] = useState([]);
-  const [currentAlgorithm, setCurrentAlgorithm] = useState(null);
   const [currentTab, setCurrentTab] = useState("home");
-  const [timeScale, setTimeScale] = useState([0, 24]);
+
   const showModal = () => setIsModalOpen(true);
   const handleCancel = () => setIsModalOpen(false);
 
   useEffect(() => {
     if (localStorage.getItem("activities")) {
-      try {
-        setActivities(
-          JSON.parse(localStorage.getItem("activities"), function (key, value) {
-            if (key === "start" || key === "end") {
-              return new dayjs(value);
-            }
-            return value;
-          })
-        );
-      } catch (e) {
-        setActivities([]);
-        console.log(e);
-      }
+      setActivities(
+        JSON.parse(localStorage.getItem("activities"), function (key, value) {
+          if (key === "start" || key === "end") {
+            return dayjs(value);
+          }
+          return value;
+        })
+      );
     }
   }, [setActivities]);
 
-  useEffect(() => {
-    if (activities.length > 0) {
-      const minHour = Math.min(...activities.map((a) => a.start));
-      const maxHour = Math.max(...activities.map((a) => a.end));
-      setTimeScale([Math.max(0, minHour - 1), maxHour + 1]);
-    }
-    console.log(activities);
-  }, [activities, currentAlgorithm]);
-
   const handleConfirm = () => {
-    const startHour = startTime.hour();
-    const endHour = endTime.hour();
-
-    if (!startTime || !endTime) {
+    if (!startDateTime || !endDateTime) {
       console.log("Data is missing!!");
-    } else if (startTime > endTime) {
-      notification.error({
-        message: "Error",
-        description: `Start time cannot be greater than end time.`,
-        placement: "topRight",
-      });
     } else {
-      console.log(startTime, endTime);
       const newActivity = {
-        start: startTime,
-        end: endTime,
+        start: startDateTime,
+        end: endDateTime,
       };
       const updatedActivities = [...activities, newActivity];
       setActivities(updatedActivities);
       localStorage.setItem("activities", JSON.stringify(updatedActivities));
-
       notification.success({
         message: "Activity Added",
-        description: `Your activity from ${formatTime(
-          startHour
-        )} to ${formatTime(endHour)} has been added successfully.`,
+        description: `Your activity from ${startDateTime.format(
+          "YYYY-MM-DD HH:mm"
+        )} to ${endDateTime.format(
+          "YYYY-MM-DD HH:mm"
+        )} has been added successfully.`,
         placement: "topRight",
       });
       setIsModalOpen(false);
@@ -92,9 +59,7 @@ function App() {
   };
 
   const greedyAlgorithm = () => {
-    setCurrentAlgorithm("greedy");
-    let sorted = activities.slice();
-    fastSort(sorted, (a, b) => a.end - b.end);
+    let sorted = activities.slice().sort((a, b) => a.end - b.end);
     const selected = [];
     let currentEnd = -Infinity;
     for (let i = 0; i < sorted.length; i++) {
@@ -103,25 +68,11 @@ function App() {
         currentEnd = sorted[i].end;
       }
     }
-    setselectedActivities(selected);
     console.log("Greedy Selected Activities:", selected);
   };
 
-  const clearActivities = () => {
-    setActivities([]);
-    setselectedActivities([]);
-    localStorage.removeItem("activities");
-    notification.info({
-      message: "Activities Cleared",
-      description: "All activities have been removed.",
-      placement: "topRight",
-    });
-  };
-
   const dpAlgorithm = () => {
-    setCurrentAlgorithm("dp");
-    let sorted = activities.slice();
-    fastSort(sorted, (a, b) => a.end - b.end);
+    let sorted = activities.slice().sort((a, b) => a.end - b.end);
 
     const n = sorted.length;
     const dp = Array(n).fill(1);
@@ -146,11 +97,25 @@ function App() {
   };
 
   const bruteForceAlgorithm = () => {
-    n = activities.length;
+    let choice = [];
+    let n = activities.length;
     for (let mask = 0; mask < (1 << n); ++mask) {
-      let flag = true;
       const selected = [];
+      for (let i = 0; i < n; ++i) {
+        if (mask&(1<<i)) selected.push(activities[i]);
+      }
+      let flag = true;
+      selected.sort((a, b) => a.end - b.end);
+      for (let i = 1; i < selected.length; ++i) {
+        if (selected[i-1].end > selected[i].start) {
+          flag = false;
+          break;
+        }
+      }
+      if (!flag) continue;
+      if (choice.length < selected.length) choice = selected;
     }
+    console.log("Brute-Force Selected Activities:", choice);
   };
 
   return (
@@ -202,13 +167,13 @@ function App() {
               <Box mt={2}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <Stack spacing={2}>
-                    <TimePicker
+                    <DateTimePicker
                       label="Start Date and Time"
-                      value={startTime}
+                      value={startDateTime}
                       onChange={(newValue) => {
-                        if (newValue) setStartTime(newValue.minute(0));
+                        if (newValue) setStartDateTime(newValue.minute(0));
                       }}
-                      views={["hours"]}
+                      views={["year", "month", "day", "hours"]}
                       minutesStep={60}
                       renderInput={(params) => (
                         <TextField
@@ -228,14 +193,14 @@ function App() {
                       )}
                     />
 
-                    <TimePicker
+                    <DateTimePicker
                       label="End Date and Time"
-                      value={endTime}
+                      value={endDateTime}
                       onChange={(newValue) => {
-                        if (newValue) setEndTime(newValue.minute(0));
+                        if (newValue) setEndDateTime(newValue.minute(0));
                       }}
-                      minDateTime={startTime}
-                      views={["hours"]}
+                      minDateTime={startDateTime}
+                      views={["year", "month", "day", "hours"]}
                       minutesStep={60}
                       renderInput={(params) => (
                         <TextField
@@ -267,95 +232,43 @@ function App() {
             {activities.length === 0 ? (
               <p>No activities added yet.</p>
             ) : (
-              <ul style={{ listStyleType: "none", padding: 0 }}>
+              <ul>
                 {activities.map((activity, index) => (
-                  <li
-                    key={index}
-                    style={{
-                      padding: "12px",
-                      margin: "8px 0",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "4px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <strong>{activity.name || `Activity ${index + 1}`}</strong>:{" "}
-                    {formatTime(activity.start.hour())} -{" "}
-                    {formatTime(activity.end.hour())}
+                  <li key={index}>
+                    {activity.start.format("YYYY-MM-DD HH:mm")} -{" "}
+                    {activity.end.format("YYYY-MM-DD HH:mm")}
                   </li>
                 ))}
               </ul>
             )}
-            <Button
-              danger
-              onClick={clearActivities}
-              style={{ maxWidth: "120px", marginTop: "16px" }}
-            >
-              Clear All Activities
-            </Button>
           </>
         )}
 
         {currentTab === "algorithms" && (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
-          >
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <h2>Algorithms</h2>
-              <Button
-                type="primary"
-                style={{
-                  width: "10%",
-                  minWidth: "96px",
-                  backgroundColor: "#4caf50",
-                }}
-                onClick={greedyAlgorithm}
-              >
-                Greedy
-              </Button>
-              <Button
-                type="primary"
-                style={{
-                  width: "10%",
-                  minWidth: "96px",
-                  marginTop: "8px",
-                  backgroundColor: "#1976d2",
-                }}
-                onClick={dpAlgorithm}
-              >
-                DP
-              </Button>
-              <Button
-                type="primary"
-                style={{
-                  width: "10%",
-                  minWidth: "96px",
-                  marginTop: "8px",
-                  backgroundColor: "#9c27b0",
-                }}
-              >
-                Brute Force
-              </Button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <h2>Visualization</h2>
-              <GranttChart
-                activities={activities}
-                selectedActivities={selectedActivities}
-                timeScale={timeScale}
-                color={
-                  currentAlgorithm === "greedy"
-                    ? "green"
-                    : currentAlgorithm === "dp"
-                    ? "blue"
-                    : currentAlgorithm === "bruteforce"
-                    ? "purple"
-                    : "blue"
-                }
-              />
-            </div>
-          </div>
+          <>
+            <h2>Algorithms</h2>
+            <Button
+              type="primary"
+              style={{ width: "10%", minWidth: "96px" }}
+              onClick={greedyAlgorithm}
+            >
+              Greedy
+            </Button>
+            <Button
+              type="primary"
+              style={{ width: "10%", minWidth: "96px", marginTop: "8px" }}
+              onClick={dpAlgorithm}
+            >
+              DP
+            </Button>
+            <Button
+              type="primary"
+              style={{ width: "10%", minWidth: "96px", marginTop: "8px" }}
+              onClick={bruteForceAlgorithm}
+            >
+              Brute Force
+            </Button>
+          </>
         )}
       </Content>
     </Layout>

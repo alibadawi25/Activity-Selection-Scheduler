@@ -69,11 +69,7 @@ function fastSort(arr, compareFn = defaultCompare) {
 
   const left = 0;
   const right = arr.length - 1;
-
-  const mid = Math.floor(arr.length / 2);
-  mergeSort(arr, left, mid, compareFn);
-  mergeSort(arr, mid + 1, right, compareFn);
-  merge(arr, left, mid, right, compareFn);
+  mergeSort(arr, left, right, compareFn);
 }
 
 export { fastSort };
