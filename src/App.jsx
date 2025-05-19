@@ -92,9 +92,7 @@ function App() {
   };
 
   const greedyAlgorithm = () => {
-    setCurrentAlgorithm("greedy");
-    let sorted = activities.slice();
-    fastSort(sorted, (a, b) => a.end - b.end);
+    let sorted = activities.slice().sort((a, b) => a.end - b.end);
     const selected = [];
     let currentEnd = -Infinity;
     for (let i = 0; i < sorted.length; i++) {
@@ -103,25 +101,11 @@ function App() {
         currentEnd = sorted[i].end;
       }
     }
-    setselectedActivities(selected);
     console.log("Greedy Selected Activities:", selected);
   };
 
-  const clearActivities = () => {
-    setActivities([]);
-    setselectedActivities([]);
-    localStorage.removeItem("activities");
-    notification.info({
-      message: "Activities Cleared",
-      description: "All activities have been removed.",
-      placement: "topRight",
-    });
-  };
-
   const dpAlgorithm = () => {
-    setCurrentAlgorithm("dp");
-    let sorted = activities.slice();
-    fastSort(sorted, (a, b) => a.end - b.end);
+    let sorted = activities.slice().sort((a, b) => a.end - b.end);
 
     const n = sorted.length;
     const dp = Array(n).fill(1);
@@ -146,12 +130,27 @@ function App() {
   };
 
   const bruteForceAlgorithm = () => {
-    n = activities.length;
+    let choice = [];
+    let n = activities.length;
     for (let mask = 0; mask < (1 << n); ++mask) {
-      let flag = true;
       const selected = [];
+      for (let i = 0; i < n; ++i) {
+        if (mask&(1<<i)) selected.push(activities[i]);
+      }
+      let flag = true;
+      selected.sort((a, b) => a.end - b.end);
+      for (let i = 1; i < selected.length; ++i) {
+        if (selected[i-1].end > selected[i].start) {
+          flag = false;
+          break;
+        }
+      }
+      if (!flag) continue;
+      if (choice.length < selected.length) choice = selected;
     }
+    console.log("Brute-Force Selected Activities:", choice);
   };
+
 
   return (
     <Layout className="layout" style={{ minHeight: "100vh" }}>
