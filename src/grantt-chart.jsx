@@ -49,7 +49,6 @@ export default function GanttChart({
   color = "blue",
   steps,
 }) {
-  // Remove debugger statement
   const [minTime, maxTime] = [0, 24];
   const timeRange = maxTime - minTime;
   const [currentlySelected, setCurrentlySelected] = useState([]);
@@ -106,7 +105,14 @@ export default function GanttChart({
   }
 
   return (
-    <Box sx={{ width: "100%", height: "100%", overflowX: "auto" }}>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        overflowX: "auto",
+        minWidth: "820px",
+      }}
+    >
       <Box>
         <Box
           sx={{
@@ -151,6 +157,7 @@ export default function GanttChart({
                 ? currentlySelectedActivity.activity === activity
                 : false;
 
+            // Calculate positions based on fixed width
             const width = Math.max(
               0,
               Math.min(100, ((endHour - startHour) / timeRange) * 100)
@@ -179,13 +186,15 @@ export default function GanttChart({
                     alignItems: "center",
                     justifyContent: "center",
                     borderRadius: 4,
-                    fontSize: 14,
+                    fontSize: { xs: 12, sm: 14 },
                     fontWeight: 500,
                     boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    padding: "0 8px",
+                    padding: "0 4px",
+                    transform: "translateZ(0)",
+                    willChange: "transform", // Optimize for animations
                   }}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{
