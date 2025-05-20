@@ -59,13 +59,13 @@ export default function GanttChart({
       setTimeout(() => {
         console.log("here");
         setCurrentlySelected(steps[i]);
-      }, i * 500 + 500);
+      }, i * 1000 + 1000);
     }
     setTimeout(() => {
       setCurrentlySelected(
         selectedActivities.map((a) => ({ activity: a, color }))
       );
-    }, steps.length * 500 + 500);
+    }, steps.length * 1000 + 1000);
   }, [steps, selectedActivities, color]);
 
   const getColor = (isSelectedColor) => {
@@ -80,6 +80,8 @@ export default function GanttChart({
         return "#9c27b0";
       case "yellow":
         return "#f7dc6f";
+      case "gray":
+        return "#808080";
       case "orange":
         return "#ffa726";
       case "red":

@@ -148,41 +148,40 @@ function App() {
     const dp = Array(n).fill(1);
     const prev = Array(n).fill(-1);
 
-    const steps = [];
     const stepsSelected = [];
-
+  
     for (let i = 1; i < n; i++) {
-      let stepSnapshot = [];
 
       for (let j = 0; j < i; j++) {
-        stepSnapshot.push({ activity: sorted[j], color: "yellow" });
-        if (sorted[j].end <= sorted[i].start && dp[j] + 1 > dp[i]) {
+        if (sorted[j].end > sorted[i].start) break;
+        let setSnapshot = [];
+        setSnapshot.push({ activity: sorted[i], color: "yellow" }); 
+        let tmp_j = j;
+        while (tmp_j !== -1) {
+          setSnapshot.push({ activity: sorted[tmp_j], color: "green" });
+          tmp_j = prev[tmp_j];
+        }
+        stepsSelected.push( setSnapshot );
+        if (dp[j] + 1 > dp[i]) {
           dp[i] = dp[j] + 1;
           prev[i] = j;
         }
       }
 
-      steps.push(stepSnapshot);
     }
 
     let idx = dp.indexOf(Math.max(...dp));
     const selected = [];
+    let setSnapshot = [];
     while (idx !== -1) {
       selected.unshift(sorted[idx]);
-
-      if (stepsSelected.length === 0)
-        stepsSelected.push([{ activity: sorted[idx], color: "green" }]);
-      else
-        stepsSelected.push([
-          ...stepsSelected[stepsSelected.length - 1],
-          { activity: sorted[idx], color: "green" },
-        ]);
-
+      setSnapshot.push( { activity: sorted[idx], color: "blue" } );
       idx = prev[idx];
     }
+    stepsSelected.push( setSnapshot );
 
     const end = performance.now();
-    setCurrentAlgorithmSteps(steps.concat(stepsSelected));
+    setCurrentAlgorithmSteps(stepsSelected);
     setselectedActivities(selected);
     setTimeTaken(end - start);
     console.log("DP Selected Activities:", selected);
@@ -197,14 +196,14 @@ function App() {
     let bestSteps = [];
     let n = activities.length;
 
-    for (let mask = 0; mask < 1 << n; ++mask) {
-      const selected = [];
-      const stepSnapshot = [];
+    const stepsSelected = [];
 
+    for (let mask = 1; mask < 1 << n; ++mask) {
+      const selected = [];
+      let stepSnapshot = [];
       for (let i = 0; i < n; ++i) {
         if (mask & (1 << i)) {
           selected.push(activities[i]);
-          stepSnapshot.push({ activity: activities[i], color: "yellow" });
         }
       }
 
@@ -216,15 +215,22 @@ function App() {
           break;
         }
       }
+        
+      for (let i = 0; i < n; ++i) {
+        if (mask & (1 << i)) {
+          selected.push(activities[i]);
+          stepSnapshot.push({ activity: activities[i], color: valid ? "yellow" : "red" });
+        }
+      }
 
       if (valid && selected.length > choice.length) {
         choice = selected;
-        bestSteps = stepSnapshot.map((item) => ({ ...item, color: "green" }));
       }
+      stepsSelected.push(stepSnapshot);
     }
-
+    stepsSelected.push([choice.map((item) => ({activity: item, color: "green"}))]); 
     const end = performance.now();
-    setCurrentAlgorithmSteps([bestSteps]);
+    setCurrentAlgorithmSteps(stepsSelected);
     setselectedActivities(choice);
     setTimeTaken(end - start);
     console.log("Brute-Force Selected Activities:", choice);
